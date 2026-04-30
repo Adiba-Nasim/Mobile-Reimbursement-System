@@ -33,9 +33,8 @@ export default function MyRequests({ session }) {
         <div style={{ textAlign: 'center', padding: 60, color: 'var(--muted)' }}>Loading your requests...</div>
       ) : requests.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 80, color: 'var(--muted)' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
           <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>No requests yet</div>
-          <div style={{ fontSize: 13 }}>Submit your first mobile reimbursement request</div>
+          <div style={{ fontSize: 13 }}>Submit your first request</div>
         </div>
       ) : (
         <>
