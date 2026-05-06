@@ -80,7 +80,7 @@ export default function AllRequests() {
             ))}
           </div>
           <div className="search-box">
-            <span>🔍</span>
+            <span></span>
             <input
               placeholder={searchMode === 'emp_no' ? 'Search by Employee ID...' : 'Search by phone number...'}
               value={search}
