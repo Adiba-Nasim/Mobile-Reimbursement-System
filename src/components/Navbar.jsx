@@ -1,10 +1,25 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 
 export default function Navbar({ session }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+
+      setIsAdmin(data?.role == 'admin')
+    }
+
+    if (session) checkAdmin()
+  }, [session])
 
   const logout = async () => {
     await supabase.auth.signOut()
@@ -17,8 +32,8 @@ export default function Navbar({ session }) {
     <header className="navbar">
       <div className="nav-inner">
 
-        {/* Brand */}
-        <NavLink to="/requests" className="brand">
+        {/* Brand — admin goes to /requests, others to /my-requests */}
+        <NavLink to={isAdmin ? "/requests" : "/my-requests"} className="brand">
           <div>
             <div className="brand-name">MRP System</div>
             <div className="brand-sub">TATA UISL MRP SYSTEM</div>
@@ -27,9 +42,21 @@ export default function Navbar({ session }) {
 
         {/* Desktop Nav */}
         <nav className="desktop-nav">
-          <NavLink to="/requests"    className={({ isActive }) => 'nav-btn' + (isActive ? ' active' : '')}>All Requests</NavLink>
-          <NavLink to="/my-requests" className={({ isActive }) => 'nav-btn' + (isActive ? ' active' : '')}>My Requests</NavLink>
-          <NavLink to="/form"        className="nav-btn new-req">+ New Request</NavLink>
+          {isAdmin && (
+            <NavLink
+              to="/requests"
+              className={({ isActive }) => 'nav-btn' + (isActive ? ' active' : '')}
+            >
+              All Requests
+            </NavLink>
+          )}
+          <NavLink
+            to="/my-requests"
+            className={({ isActive }) => 'nav-btn' + (isActive ? ' active' : '')}
+          >
+            My Requests
+          </NavLink>
+          <NavLink to="/form" className="nav-btn new-req">+ New Request</NavLink>
           <div className="user-badge">
             <span className="user-dot" />
             <span className="user-name">{firstName}</span>
@@ -48,11 +75,40 @@ export default function Navbar({ session }) {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="mobile-menu">
-          <NavLink to="/requests"    className="mobile-nav-btn" onClick={() => setMenuOpen(false)}>All Requests</NavLink>
-          <NavLink to="/my-requests" className="mobile-nav-btn" onClick={() => setMenuOpen(false)}>My Requests</NavLink>
-          <NavLink to="/form"        className="mobile-nav-btn" style={{ color: '#2563eb', fontWeight: 700 }} onClick={() => setMenuOpen(false)}>+ New Request</NavLink>
-          <button className="mobile-nav-btn" style={{ color: 'var(--red)' }} onClick={logout}>Logout</button>
-          <div style={{ padding: '8px 20px', fontSize: 12, color: 'var(--muted)' }}>Logged in as {firstName}</div>
+          {isAdmin && (
+            <NavLink
+              to="/requests"
+              className="mobile-nav-btn"
+              onClick={() => setMenuOpen(false)}
+            >
+              All Requests
+            </NavLink>
+          )}
+          <NavLink
+            to="/my-requests"
+            className="mobile-nav-btn"
+            onClick={() => setMenuOpen(false)}
+          >
+            My Requests
+          </NavLink>
+          <NavLink
+            to="/form"
+            className="mobile-nav-btn"
+            style={{ color: '#2563eb', fontWeight: 700 }}
+            onClick={() => setMenuOpen(false)}
+          >
+            + New Request
+          </NavLink>
+          <button
+            className="mobile-nav-btn"
+            style={{ color: 'var(--red)' }}
+            onClick={logout}
+          >
+            Logout
+          </button>
+          <div style={{ padding: '8px 20px', fontSize: 12, color: 'var(--muted)' }}>
+            Logged in as {firstName}
+          </div>
         </div>
       )}
     </header>

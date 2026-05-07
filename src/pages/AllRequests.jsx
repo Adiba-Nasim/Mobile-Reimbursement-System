@@ -16,8 +16,9 @@ export default function AllRequests() {
   }, [])
 
   const fetchRoleAndRequests = async () => {
-    setLoading(true)
+  setLoading(true)
 
+  try {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
@@ -34,15 +35,23 @@ export default function AllRequests() {
       if (profile?.role) setUserRole(profile.role)
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('requests')
       .select('*')
       .order('submitted_at', { ascending: false })
 
+    console.log('Requests data:', data)
+    console.log('Requests error:', error)
+    console.log('Requests count:', data?.length)
+
     setRequests(data || [])
+
+  } catch (err) {
+    console.log('Caught error:', err)
+  } finally {
     setLoading(false)
   }
-
+}
   const handleStatusChange = (requestId, newStatus) => {
     setRequests(prev =>
       prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r)
@@ -248,4 +257,5 @@ function DetailItem({ label, value }) {
       <span style={{ fontWeight: 600 }}>{value || '—'}</span>
     </div>
   )
+  
 }

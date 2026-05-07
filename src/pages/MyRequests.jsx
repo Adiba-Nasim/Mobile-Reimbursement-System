@@ -43,7 +43,7 @@ export default function MyRequests({ session }) {
             <table>
               <thead>
                 <tr>
-                  <th>Request No.</th>
+                  <th>Employee ID.</th>
                   <th>Employee Name</th>
                   <th>Department</th>
                   <th>Mobile Set Name</th>

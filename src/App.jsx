@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
-
+import AdminRoute from './components/AdminRoute'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import RequestForm from './pages/RequestForm'
@@ -34,10 +34,20 @@ export default function App() {
       <Routes>
         <Route path="/login"       element={!session ? <Login />                         : <Navigate to="/form" />} />
         <Route path="/signup"      element={!session ? <Signup />                        : <Navigate to="/form" />} />
-        <Route path="/requests"    element={session  ? <AllRequests session={session} /> : <Navigate to="/login" />} />
         <Route path="/my-requests" element={session  ? <MyRequests session={session} />  : <Navigate to="/login" />} />
         <Route path="/form"        element={session  ? <RequestForm session={session} /> : <Navigate to="/login" />} />
-        <Route path="*"            element={<Navigate to={session ? "/form" : "/login"} />} />
+
+        {/* Admin-only route */}
+        <Route
+          path="/requests"
+          element={
+            session
+              ? <AdminRoute><AllRequests session={session} /></AdminRoute>
+              : <Navigate to="/login" />
+          }
+        />
+
+        <Route path="*" element={<Navigate to={session ? "/form" : "/login"} />} />
       </Routes>
     </BrowserRouter>
   )

@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient'
 
 const AGENCIES = ["National Electronics", "Samsung Store", "Apple Store", "Reliance Digital", "Croma", "Vijay Sales"]
 const DEPARTMENTS = ["IT", "Finance", "HR", "Security", "Management"]
+const LEVELS = ["Level 1", "Level 2", "Level 3"]  // ✅ consistent casing
 
 export default function RequestForm({ session }) {
   const navigate    = useNavigate()
@@ -15,7 +16,7 @@ export default function RequestForm({ session }) {
   const [file, setFile]           = useState(null)
 
   const [emp, setEmp] = useState({
-    name: '', designation: '', dept: DEPARTMENTS[0], costCentre: '', level: '', empType: ''
+    name: '', designation: '', dept: DEPARTMENTS[0], costCentre: '', level: LEVELS[0], empType: ''  // ✅ default to Level 1
   })
 
   const [f, setF] = useState({
@@ -28,12 +29,15 @@ export default function RequestForm({ session }) {
   const setEmpField = (k, v) => setEmp(p => ({ ...p, [k]: v }))
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single()
+  const fetchProfile = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .single()
+
+    console.log('FULL PROFILE:', data)        // ← ADD HERE
+    console.log('emp_type:', data?.emp_type)  // ← ADD HERE
       if (data) {
         setProfile(data)
         setEmp({
@@ -41,7 +45,7 @@ export default function RequestForm({ session }) {
           designation: data.designation ?? '',
           dept:        data.dept        ?? DEPARTMENTS[0],
           costCentre:  data.cost_centre ?? '',
-          level:       data.level       ?? '',
+          level:       data.level       ?? LEVELS[0],  // ✅ fallback to Level 1
           empType:     data.emp_type    ?? ''
         })
         setF(p => ({ ...p, mobileNo: data.phone ?? '' }))
@@ -80,11 +84,10 @@ export default function RequestForm({ session }) {
     let attachmentUrl = ''
     let attachmentName = ''
 
-    // Upload file if selected
     if (file) {
       setUploadProgress('Uploading file...')
       const fileName = `${session.user.id}/${Date.now()}_${file.name}`
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('attachments')
         .upload(fileName, file)
 
@@ -104,12 +107,15 @@ export default function RequestForm({ session }) {
       setUploadProgress('')
     }
 
-    // Insert request
     const { error: insertError } = await supabase.from('requests').insert({
       user_id:              session.user.id,
       emp_no:               profile?.emp_no,
       emp_name:             emp.name,
+      designation:          emp.designation,
       dept:                 emp.dept,
+      cost_centre:          emp.costCentre,
+      level:                emp.level,       
+      emp_type:             emp.empType,
       mobile_set_name:      f.mobileSetName,
       model:                f.model,
       serial_no:            f.serialNo,
@@ -136,9 +142,8 @@ export default function RequestForm({ session }) {
   if (submitted) return (
     <div className="page-wrap success-wrap">
       <div className="success-card">
-        <div className="success-icon">✅</div>
         <div className="success-title">Request Submitted!</div>
-        <p className="success-sub">Your mobile reimbursement request has been submitted successfully.</p>
+        <p className="success-sub">Your request has been submitted successfully.</p>
         <div className="success-btns">
           <button className="btn-primary" style={{ width: 'auto', padding: '11px 24px' }}
             onClick={() => {
@@ -158,7 +163,6 @@ export default function RequestForm({ session }) {
     <div className="page-wrap">
       <div className="card" style={{ maxWidth: 860, margin: '0 auto' }}>
 
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
           <div>
             <div style={{ fontSize: 22, fontWeight: 800 }}>MRP System</div>
@@ -169,24 +173,29 @@ export default function RequestForm({ session }) {
 
         {error && <div style={{ background: '#ef444420', border: '1px solid #ef444440', borderRadius: 8, padding: '10px 14px', color: '#ef4444', fontSize: 13, margin: '12px 0' }}>{error}</div>}
 
-        {/* Employee Details */}
         <div className="section-label">Employee Details</div>
         <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '4px 12px 12px', marginBottom: 8 }}>
           <div style={{ fontSize: 11, color: 'var(--muted)', margin: '8px 0 12px', fontStyle: 'italic' }}>
             You can edit the fields below if needed. Name and Department are fixed.
           </div>
           <div className="grid2">
-            <ReadField label="Employee No"   value={profile?.emp_no} />
-            <ReadField label="Full Name"     value={emp.name} />
-            <EditField label="Designation"   value={emp.designation} onChange={v => setEmpField('designation', v)} placeholder="e.g. Manager" />
-            <EditField label="Level"         value={emp.level}       onChange={v => setEmpField('level', v)} placeholder="e.g. JM9" />
+            <ReadField label="Employee No" value={profile?.emp_no} />
+            <ReadField label="Full Name"   value={emp.name} />
+            <EditField label="Designation" value={emp.designation} onChange={v => setEmpField('designation', v)} placeholder="e.g. Manager" />
+
+            <div className="field">
+              <label>Level</label>
+              <select value={emp.level} onChange={e => setEmpField('level', e.target.value)}>
+                {LEVELS.map(a => <option key={a} value={a}>{a}</option>)}  
+              </select>
+            </div>
+
             <ReadField label="Department"    value={emp.dept} />
-            <EditField label="Cost Centre"   value={emp.costCentre}  onChange={v => setEmpField('costCentre', v)} placeholder="e.g. 1400" />
-            <EditField label="Employee Type" value={emp.empType}     onChange={v => setEmpField('empType', v)} placeholder="e.g. Regular" />
+            <EditField label="Cost Centre"   value={emp.costCentre} onChange={v => setEmpField('costCentre', v)} placeholder="e.g. 1400" />
+            <EditField label="Employee Type" value={emp.empType}    onChange={v => setEmpField('empType', v)}    placeholder="e.g. Regular" />
           </div>
         </div>
 
-        {/* Mobile Set */}
         <div className="section-label">Particulars of New Mobile Set</div>
         <div className="grid2">
           <FormField label="Mobile Set Name *" value={f.mobileSetName} onChange={v => setField('mobileSetName', v)} placeholder="e.g. SAMSUNG SM-A17 5G" />
@@ -226,30 +235,19 @@ export default function RequestForm({ session }) {
           <FormField label="Mobile Purchase Date *"  value={f.mobilePurchaseDate} onChange={v => setField('mobilePurchaseDate', v)} type="date" />
         </div>
 
-        {/* Attachment */}
         <div className="section-label">Invoice / Receipt Attachment</div>
         <div style={{ border: '2px dashed var(--border)', borderRadius: 12, padding: '24px', textAlign: 'center', background: 'var(--bg)', marginBottom: 8 }}>
-          <input
-            type="file" id="fileInput"
-            accept=".pdf,.jpg,.jpeg,.png"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
+          <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }} onChange={handleFileChange} />
           <label htmlFor="fileInput" style={{ cursor: 'pointer' }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)' }}>
               {file ? file.name : 'Click to upload invoice / receipt'}
             </div>
-            <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 4 }}>
-              PDF, JPG or PNG · Max 5MB
-            </div>
+            <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 4 }}>PDF, JPG or PNG · Max 5MB</div>
           </label>
           {file && (
             <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               <span style={{ color: 'var(--green)', fontSize: 13 }}>✓ {file.name}</span>
-              <button
-                onClick={() => setFile(null)}
-                style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: 13, cursor: 'pointer' }}
-              >✕ Remove</button>
+              <button onClick={() => setFile(null)} style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: 13, cursor: 'pointer' }}>✕ Remove</button>
             </div>
           )}
           {uploadProgress && <div style={{ color: 'var(--accent)', fontSize: 13, marginTop: 8 }}>{uploadProgress}</div>}

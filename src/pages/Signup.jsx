@@ -8,7 +8,7 @@ export default function Signup() {
   const navigate = useNavigate()
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
-  const [empNoTaken, setEmpNoTaken] = useState(false)  // real-time flag
+  const [empNoTaken, setEmpNoTaken] = useState(false)
   const [f, setF] = useState({
     name: '', phone: '', email: '', empNo: '',
     dept: DEPARTMENTS[0], password: ''
@@ -16,7 +16,6 @@ export default function Signup() {
 
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
 
-  // Real-time Employee ID check as user types
   const checkEmpNo = async (value) => {
     set('empNo', value)
     setEmpNoTaken(false)
@@ -48,7 +47,6 @@ export default function Signup() {
     setLoading(true)
     setError('')
 
-    // Check if phone already exists
     const { data: existingPhone } = await supabase
       .from('profiles')
       .select('phone')
@@ -61,7 +59,6 @@ export default function Signup() {
       return
     }
 
-    // Check if email already exists
     const { data: existingEmail } = await supabase
       .from('profiles')
       .select('email')
@@ -74,7 +71,6 @@ export default function Signup() {
       return
     }
 
-    // Final guard: re-check Employee ID before submitting
     const { data: existingEmp } = await supabase
       .from('profiles')
       .select('emp_no')
@@ -87,7 +83,6 @@ export default function Signup() {
       return
     }
 
-    // 1. Create auth user
     const { data, error: authError } = await supabase.auth.signUp({
       email: f.email,
       password: f.password,
@@ -100,7 +95,6 @@ export default function Signup() {
       return
     }
 
-    // 2. Insert profile
     const { error: profileError } = await supabase.from('profiles').insert({
       id:     data.user.id,
       phone:  f.phone,
@@ -116,15 +110,14 @@ export default function Signup() {
       return
     }
 
-    navigate('/requests')
+    navigate('/form')  // ✅ fixed
   }
 
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <div className="auth-logo">📱</div>
         <h1 className="auth-title">Create Account</h1>
-        <p className="auth-sub">Register to use MRPS</p>
+        <p className="auth-sub">Register to MRPS</p>
         <div className="auth-divider" />
 
         {error && (
@@ -133,7 +126,6 @@ export default function Signup() {
           </div>
         )}
 
-        {/* Name */}
         <div className="field">
           <label>Full Name *</label>
           <input
@@ -147,7 +139,6 @@ export default function Signup() {
           )}
         </div>
 
-        {/* Phone */}
         <div className="field">
           <label>Phone Number *</label>
           <input
@@ -168,7 +159,6 @@ export default function Signup() {
           )}
         </div>
 
-        {/* Email */}
         <div className="field">
           <label>Email *</label>
           <input
@@ -186,7 +176,6 @@ export default function Signup() {
           )}
         </div>
 
-        {/* Emp ID */}
         <div className="field">
           <label>Employee ID *</label>
           <input
@@ -201,16 +190,13 @@ export default function Signup() {
             <div style={{ color: 'var(--red)', fontSize: 11, marginTop: 4 }}>Enter a valid Employee ID</div>
           )}
           {f.empNo && f.empNo.trim().length >= 2 && empNoTaken && (
-            <div style={{ color: 'var(--red)', fontSize: 11, marginTop: 4 }}>
-              ✕ This Employee ID is already registered
-            </div>
+            <div style={{ color: 'var(--red)', fontSize: 11, marginTop: 4 }}>✕ This Employee ID is already registered</div>
           )}
           {f.empNo && f.empNo.trim().length >= 2 && !empNoTaken && (
             <div style={{ color: 'var(--green)', fontSize: 11, marginTop: 4 }}>✓ Available</div>
           )}
         </div>
 
-        {/* Department */}
         <div className="field">
           <label>Department</label>
           <select value={f.dept} onChange={e => set('dept', e.target.value)}>
@@ -218,7 +204,6 @@ export default function Signup() {
           </select>
         </div>
 
-        {/* Password */}
         <div className="field">
           <label>Password * (min 6 characters)</label>
           <input

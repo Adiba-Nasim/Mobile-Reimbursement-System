@@ -180,7 +180,7 @@ function ExpandedRecord({ r, onClose, userRole, onStatusChange }) {
             <FieldDisplay label="Level"         value={r.level} />
             <FieldDisplay label="Department"    value={r.dept} />
             <FieldDisplay label="Cost Centre"   value={r.cost_centre} />
-            <FieldDisplay label="Employee Type" value={r.employee_type} />
+            <FieldDisplay label="Employee Type" value={r.emp_type} />
           </div>
         </div>
       </div>
