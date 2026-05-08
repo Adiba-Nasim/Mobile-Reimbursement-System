@@ -233,10 +233,9 @@ export default function RequestForm({ session }) {
 
   {/* COST FIELD */}
   <div className="field">
-
-    <FormField
-      label="Cost (₹) *"
-      input
+    
+      <label>Cost </label>
+      <input
       type="number"
       placeholder="e.g. 21000"
       value={f.cost}
