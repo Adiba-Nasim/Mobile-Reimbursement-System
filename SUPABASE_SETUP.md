@@ -5,77 +5,88 @@ Go to supabase.com and create a new project.
 
 ## 2. Run this SQL in the SQL Editor
 
-### Profiles table
-CREATE TABLE profiles (
-  id UUID REFERENCES auth.users ON DELETE CASCADE,
-  emp_no TEXT UNIQUE,
-  emp_name TEXT,
-  dept TEXT,
-  designation TEXT,
-  level TEXT,
-  cost_centre TEXT,
-  employee_type TEXT,
-  mobile_no TEXT,
-  role TEXT DEFAULT 'employee',
-  PRIMARY KEY (id)
+-- TABLE 1: profiles
+create table profiles (
+  id           uuid primary key references auth.users(id) on delete cascade,
+  emp_no       text unique not null,
+  name         text not null,
+  email        text unique not null,
+  phone        text unique not null,
+  dept         text not null,
+  designation  text,
+  cost_centre  text,
+  level        text,
+  emp_type     text,
+  role         text default 'employee',
+  created_at   timestamptz default now()
 );
 
-### Requests table
-CREATE TABLE requests (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  emp_no TEXT,
-  emp_name TEXT,
-  dept TEXT,
-  mobile_set_name TEXT,
-  model TEXT,
-  serial_no TEXT,
-  cost NUMERIC,
-  mobile_no TEXT,
-  agency TEXT,
-  place TEXT,
-  last_reim_date DATE,
-  mobile_purchase_date DATE,
-  attachment_name TEXT,
-  attachment_url TEXT,
-  status TEXT DEFAULT 'Pending',
-  submitted_at TIMESTAMPTZ DEFAULT NOW()
+-- TABLE 2: requests
+create table requests (
+  id                   uuid primary key default gen_random_uuid(),
+  user_id              uuid references profiles(id) on delete cascade,
+  emp_no               text,
+  emp_name             text,
+  designation          text,
+  level                text,
+  dept                 text,
+  cost_centre          text,
+  emp_type             text,
+  mobile_set_name      text,
+  model                text,
+  serial_no            text,
+  place                text,
+  cost                 numeric(10,2),
+  mobile_no            text,
+  agency               text,
+  mobile_purchase_date date,
+  last_reim_date       date,
+  attachment_name      text,
+  attachment_url       text,
+  status               text default 'Pending',
+  submitted_at         timestamptz default now()
 );
 
-## 3. RLS Policies — run in SQL Editor
+-- RLS
+alter table profiles enable row level security;
+alter table requests enable row level security;
 
--- Enable RLS
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
+create policy "Own profile"
+  on profiles for all
+  using (auth.uid() = id);
 
--- Profiles: users can read/update their own
-CREATE POLICY "Users can view own profile"
-ON profiles FOR SELECT
-USING (auth.uid() = id);
+create policy "Own requests select"
+  on requests for select
+  using (auth.uid() = user_id);
 
-CREATE POLICY "Users can update own profile"
-ON profiles FOR UPDATE
-USING (auth.uid() = id);
+create policy "Own requests insert"
+  on requests for insert
+  with check (auth.uid() = user_id);
 
--- Requests: anyone logged in can insert
-CREATE POLICY "Authenticated users can insert"
-ON requests FOR INSERT
-WITH CHECK (auth.role() = 'authenticated');
+create policy "Admin all"
+  on requests for all
+  using (
+    exists (
+      select 1 from profiles
+      where id = auth.uid() and role = 'admin'
+    )
+  );
 
--- Requests: anyone logged in can read
-CREATE POLICY "Authenticated users can read"
-ON requests FOR SELECT
-USING (auth.role() = 'authenticated');
+-- STORAGE
+insert into storage.buckets (id, name, public)
+values ('attachments', 'attachments', true);
 
--- Requests: only admin can update status
-CREATE POLICY "Admin can update request status"
-ON requests FOR UPDATE
-USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role = 'admin'
-  )
-);
+create policy "Allow uploads"
+  on storage.objects for insert
+  with check (bucket_id = 'attachments');
+
+create policy "Allow public read"
+  on storage.objects for select
+  using (bucket_id = 'attachments');
+
+create policy "Allow insert on signup"
+  on profiles for insert
+  with check (auth.uid() = id);
 
 ## 4. Storage bucket
 - Go to Storage → Create bucket → name it `attachments`
